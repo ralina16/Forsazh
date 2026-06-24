@@ -12,33 +12,33 @@
     @include('partials.modal-review-full')
 
     {{-- HERO --}}
-<section class="hero" id="hero">
-    <div class="hero-inner container-xxl">
-        <div class="title-back" data-aos="fade-up" data-aos-delay="100">ФОРСАЖ</div>
-        
-        <div class="hero-slider" data-aos="fade-up" data-aos-delay="200">
-            <div class="hero-slides">
-                <div class="hero-slide active">
-                    <img src="{{ asset('assets/images/banner/car.png') }}" alt="BMW X7" class="hero-img">
-                </div>
-                <div class="hero-slide">
-                    <img src="{{ asset('assets/images/banner/car2.png') }}" alt="Audi Q8" class="hero-img">
+    <section class="hero" id="hero">
+        <div class="hero-inner container-xxl">
+            <div class="title-back" data-aos="fade-up" data-aos-delay="100">ФОРСАЖ</div>
+
+            <div class="hero-slider" data-aos="fade-up" data-aos-delay="200">
+                <div class="hero-slides">
+                    <div class="hero-slide active">
+                        <img src="{{ asset('assets/images/banner/car.png') }}" alt="BMW X7" class="hero-img">
+                    </div>
+                    <div class="hero-slide">
+                        <img src="{{ asset('assets/images/banner/car2.png') }}" alt="Audi Q8" class="hero-img">
+                    </div>
                 </div>
             </div>
+
+            <div class="title-front" data-aos="fade-up" data-aos-delay="100">
+                ФОРСАЖ
+                <span class="subtitle" data-aos="fade-up" data-aos-delay="200">Автосалон</span>
+            </div>
+
+            <!-- Точки справа -->
+            <div class="hero-dots">
+                <button type="button" class="hero-dot active" data-slide="0" aria-label="Слайд 1"></button>
+                <button type="button" class="hero-dot" data-slide="1" aria-label="Слайд 2"></button>
+            </div>
         </div>
-        
-        <div class="title-front" data-aos="fade-up" data-aos-delay="100">
-            ФОРСАЖ
-            <span class="subtitle" data-aos="fade-up" data-aos-delay="200">Автосалон</span>
-        </div>
-        
-        <!-- Точки справа -->
-        <div class="hero-dots">
-            <button type="button" class="hero-dot active" data-slide="0" aria-label="Слайд 1"></button>
-            <button type="button" class="hero-dot" data-slide="1" aria-label="Слайд 2"></button>
-        </div>
-    </div>
-</section>
+    </section>
 
 
     <section class="after-hero">
@@ -608,19 +608,16 @@
                                     </div>
                                     <p class="review-text">
                                         {{ htmlspecialchars($previewText) }}
-                                      {{-- внутри цикла отзывов --}}
-@if ($isTruncated)
-    <button class="read-more-btn"
-            data-bs-toggle="modal"
-            data-bs-target="#fullReviewModal"
-            data-review-id="{{ $review->id }}"
-            data-review-name="{{ $review->user_name }}"
-            data-review-rating="{{ $review->rating }}"
-            data-review-date="{{ $review->created_at->format('d.m.Y в H:i') }}"
-            data-review-comment="{{ $review->comment }}">
-        Читать полностью
-    </button>
-@endif
+                                        @if ($isTruncated)
+                                            <button class="read-more-btn" data-bs-toggle="modal"
+                                                data-bs-target="#fullReviewModal" data-review-id="{{ $review->id }}"
+                                                data-review-name="{{ $review->user_name }}"
+                                                data-review-rating="{{ $review->rating }}"
+                                                data-review-date="{{ $review->created_at->format('d.m.Y в H:i') }}"
+                                                data-review-comment="{{ $review->comment }}">
+                                                Читать полностью
+                                            </button>
+                                        @endif
                                     </p>
                                     <div class="review-footer d-flex justify-content-between align-items-center mt-auto">
                                         <div class="review-date text-muted small">
@@ -771,6 +768,16 @@
             if (track && scrollLeftBtn && scrollRightBtn) {
                 let isScrolling = false;
 
+                function getScrollStep() {
+                    const firstCard = track.querySelector('.review-card');
+                    if (!firstCard) return 400;
+
+                    const cardWidth = firstCard.offsetWidth;
+                    const gap = parseFloat(getComputedStyle(track.querySelector('.reviews-container')).gap) || 24;
+
+                    return cardWidth + gap;
+                }
+
                 function updateButtonVisibility() {
                     if (track.scrollLeft <= 0) {
                         scrollLeftBtn.style.display = 'none';
@@ -803,7 +810,7 @@
                 function smoothScroll(container, direction) {
                     if (isScrolling) return;
                     isScrolling = true;
-                    const scrollAmount = 400;
+                    const scrollAmount = getScrollStep();
                     container.scrollBy({
                         left: direction === 'right' ? scrollAmount : -scrollAmount,
                         behavior: 'smooth'
@@ -814,69 +821,69 @@
                     }, 600);
                 }
             }
-        });
+        })();
     </script>
 
     <script>
-(function() {
-    const slides = document.querySelectorAll('.hero-slide');
-    const dots = document.querySelectorAll('.hero-dot');
-    
-    if (!slides.length) return;
-    
-    let currentSlide = 0;
-    let autoPlayInterval;
-    const autoPlayDelay = 4000;
-    
-    function goToSlide(index) {
-        slides.forEach(s => s.classList.remove('active'));
-        dots.forEach(d => d.classList.remove('active'));
-        
-        currentSlide = index;
-        
-        slides[currentSlide].classList.add('active');
-        dots[currentSlide].classList.add('active');
-    }
-    
-    function nextSlide() {
-        let next = currentSlide + 1;
-        if (next >= slides.length) {
-            next = 0;
-        }
-        goToSlide(next);
-    }
-    
-    function prevSlide() {
-        let prev = currentSlide - 1;
-        if (prev < 0) {
-            prev = slides.length - 1;
-        }
-        goToSlide(prev);
-    }
-    
-    function startAutoPlay() {
-        autoPlayInterval = setInterval(nextSlide, autoPlayDelay);
-    }
-    
-    function stopAutoPlay() {
-        clearInterval(autoPlayInterval);
-    }
-    
-    dots.forEach((dot, i) => {
-        dot.addEventListener('click', () => {
-            goToSlide(i);
-            stopAutoPlay();
+        (function() {
+            const slides = document.querySelectorAll('.hero-slide');
+            const dots = document.querySelectorAll('.hero-dot');
+
+            if (!slides.length) return;
+
+            let currentSlide = 0;
+            let autoPlayInterval;
+            const autoPlayDelay = 4000;
+
+            function goToSlide(index) {
+                slides.forEach(s => s.classList.remove('active'));
+                dots.forEach(d => d.classList.remove('active'));
+
+                currentSlide = index;
+
+                slides[currentSlide].classList.add('active');
+                dots[currentSlide].classList.add('active');
+            }
+
+            function nextSlide() {
+                let next = currentSlide + 1;
+                if (next >= slides.length) {
+                    next = 0;
+                }
+                goToSlide(next);
+            }
+
+            function prevSlide() {
+                let prev = currentSlide - 1;
+                if (prev < 0) {
+                    prev = slides.length - 1;
+                }
+                goToSlide(prev);
+            }
+
+            function startAutoPlay() {
+                autoPlayInterval = setInterval(nextSlide, autoPlayDelay);
+            }
+
+            function stopAutoPlay() {
+                clearInterval(autoPlayInterval);
+            }
+
+            dots.forEach((dot, i) => {
+                dot.addEventListener('click', () => {
+                    goToSlide(i);
+                    stopAutoPlay();
+                    startAutoPlay();
+                });
+            });
+
+            const slider = document.querySelector('.hero-slider');
+            if (slider) {
+                slider.addEventListener('mouseenter', stopAutoPlay);
+                slider.addEventListener('mouseleave', startAutoPlay);
+            }
+
             startAutoPlay();
-        });
-    });
-    
-    const slider = document.querySelector('.hero-slider');
-    if (slider) {
-        slider.addEventListener('mouseenter', stopAutoPlay);
-        slider.addEventListener('mouseleave', startAutoPlay);
-    }
-    
-    startAutoPlay();
-})();
+        })();
     </script>
 @endpush

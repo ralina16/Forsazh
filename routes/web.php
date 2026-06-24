@@ -212,4 +212,7 @@ Route::middleware(['auth', 'isAdmin'])->prefix('admin')->name('admin.')->group(f
     Route::post('/requests/general', [RequestController::class, 'storeGeneralAdmin'])->name('requests.general.store');
     Route::post('/requests/general/{id}', [RequestController::class, 'updateGeneralAdmin'])->name('requests.general.update');
     Route::post('/requests/general/{id}/delete', [RequestController::class, 'destroyGeneralAdmin'])->name('requests.general.destroy');
+
+      Route::post('/users/toggle-email-verification', [AdminUserController::class, 'toggleEmailVerification'])
+        ->name('users.toggle-email-verification');
 });

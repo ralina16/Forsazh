@@ -501,13 +501,14 @@
             });
         }
 
-        // ========== ПОДТВЕРЖДЕНИЕ EMAIL (двухэтапная регистрация) ==========
+               // ========== ПОДТВЕРЖДЕНИЕ EMAIL (двухэтапная регистрация) ==========
         const emailCodeBlock = document.getElementById('email-verification-block');
         const emailCodeInput = document.getElementById('reg-email-code');
         const resendBtn = document.getElementById('resend-code');
         const timerText = document.getElementById('timer-text');
         const regSubmitBtn = document.getElementById('reg-submit-btn');
         let codeSent = false;
+        let verificationDisabled = false;
         let timerInterval;
 
         function startTimer(duration = 60) {
@@ -543,7 +544,7 @@
                     fieldDiv?.after(errDiv);
                 }
                 emailInput.focus();
-                return false;
+                return { disabled: false, sent: false };
             }
 
             regSubmitBtn.disabled = true;
@@ -563,20 +564,34 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
+                    // Если проверка отключена администратором
+                    if (data.disabled) {
+                        verificationDisabled = true;
+                        codeSent = true;
+                        emailCodeBlock.style.display = 'none';
+                        regSubmitBtn.textContent = 'ЗАРЕГИСТРИРОВАТЬСЯ';
+                        return { disabled: true, sent: true };
+                    }
+
+                    // Обычный режим — показываем поле кода
+                    verificationDisabled = false;
                     emailCodeBlock.style.display = 'block';
                     emailCodeInput.focus();
                     codeSent = true;
                     regSubmitBtn.textContent = 'ПОДТВЕРДИТЬ И ЗАРЕГИСТРИРОВАТЬСЯ';
                     startTimer(60);
+                    return { disabled: false, sent: true };
                 } else {
                     alert(data.message || 'Ошибка отправки кода');
                     codeSent = false;
                     regSubmitBtn.textContent = 'ЗАРЕГИСТРИРОВАТЬСЯ';
+                    return { disabled: false, sent: false };
                 }
             } catch (e) {
                 alert('Ошибка сети. Попробуйте позже.');
                 codeSent = false;
                 regSubmitBtn.textContent = 'ЗАРЕГИСТРИРОВАТЬСЯ';
+                return { disabled: false, sent: false };
             } finally {
                 regSubmitBtn.disabled = false;
             }
@@ -588,9 +603,10 @@
         document.getElementById('reg-email')?.addEventListener('input', function() {
             if (codeSent) {
                 codeSent = false;
+                verificationDisabled = false;
                 emailCodeBlock.style.display = 'none';
                 emailCodeInput.value = '';
-                regSubmitBtn.textContent = 'ЗАРЕГИСТРИСТРИРОВАТЬСЯ';
+                regSubmitBtn.textContent = 'ЗАРЕГИСТРИРОВАТЬСЯ';
                 clearInterval(timerInterval);
                 timerText.textContent = '';
                 resendBtn.style.display = 'none';
@@ -621,6 +637,7 @@
 
                 // Валидация всех полей
                 form.querySelectorAll('.field').forEach(fieldEl => {
+                    // Пропускаем поле кода, если оно скрыто (проверка отключена)
                     if (fieldEl.closest('#email-verification-block') && emailCodeBlock.style.display === 'none') {
                         return;
                     }
@@ -668,11 +685,23 @@
                 // === РЕГИСТРАЦИЯ: двухэтапная логика ===
                 if (form.classList.contains('reg')) {
                     if (!codeSent) {
-                        await sendVerificationCode();
-                        return;
+                        const result = await sendVerificationCode();
+                        
+                        // Если проверка отключена администратором — сразу отправляем форму
+                        if (result.disabled) {
+                            // codeSent уже true, emailCodeBlock скрыт
+                            // Просто продолжаем выполнение ниже к AJAX отправке
+                        } else if (!result.sent) {
+                            // Ошибка отправки — останавливаемся
+                            return;
+                        } else {
+                            // Код отправлен, ждём ввода
+                            return;
+                        }
                     }
 
-                    if (!emailCodeInput.value.trim()) {
+                    // Если код требуется, но не введен
+                    if (emailCodeBlock.style.display !== 'none' && !emailCodeInput.value.trim()) {
                         emailCodeBlock.style.display = 'block';
                         emailCodeInput.focus();
                         const fieldEl = emailCodeInput.closest('.field');
@@ -687,7 +716,7 @@
                     }
                 }
 
-                // === AJAX отправка формы (авторизация или этап 2 регистрации) ===
+                // === AJAX отправка формы ===
                 const formData = new FormData(this);
                 const action = this.getAttribute('action');
 

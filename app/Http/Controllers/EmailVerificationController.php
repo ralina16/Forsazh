@@ -11,8 +11,26 @@ use Illuminate\Validation\ValidationException;
 
 class EmailVerificationController extends Controller
 {
+    /**
+     * Проверяет, включена ли верификация email
+     */
+    private function isVerificationEnabled(): bool
+    {
+        $setting = EmailVerification::where('email', '__system_settings__')->first();
+        return $setting ? $setting->verification_enabled : true;
+    }
+
     public function send(Request $request): JsonResponse
     {
+        // Если проверка отключена — сразу возвращаем success
+        if (!$this->isVerificationEnabled()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Проверка email отключена администратором',
+                'disabled' => true
+            ]);
+        }
+
         $request->validate([
             'email' => ['required', 'email', 'max:255']
         ]);
@@ -31,6 +49,14 @@ class EmailVerificationController extends Controller
 
     public function verify(Request $request): JsonResponse
     {
+        // Если проверка отключена — сразу считаем верификацию пройденной
+        if (!$this->isVerificationEnabled()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Проверка email отключена администратором'
+            ]);
+        }
+
         $request->validate([
             'email' => ['required', 'email'],
             'code'  => ['required', 'string', 'size:6']

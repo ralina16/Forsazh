@@ -63,16 +63,20 @@ class AuthController extends Controller
         return back()->withErrors(['general' => 'Неверный email или пароль'])->withInput();
     }
 
-    public function register(Request $request)
+       public function register(Request $request)
     {
-        $validated = $request->validate([
+        $setting = EmailVerification::where('email', '__system_settings__')->first();
+        $verificationEnabled = $setting ? $setting->verification_enabled : true;
+
+        $rules = [
             'name'       => ['required', 'string', 'min:4', 'max:100', 'regex:/^[\p{Cyrillic}\p{Latin}\s\-]+$/u'],
             'email'      => 'required|email|max:255|unique:users,email',
             'phone'      => 'required|string|min:10|max:20',
             'password'   => ['required', 'min:6', 'confirmed', Password::defaults()],
             'agree'      => 'accepted',
-            'email_code' => 'required|string|size:6',
-        ], [
+        ];
+
+        $messages = [
             'name.required'       => 'Введите имя',
             'name.min'            => 'Имя должно содержать минимум 4 символа',
             'name.regex'          => 'Имя должно содержать только буквы',
@@ -85,22 +89,32 @@ class AuthController extends Controller
             'password.min'        => 'Пароль должен содержать минимум 6 символов',
             'password.confirmed'  => 'Пароли не совпадают',
             'agree.accepted'      => 'Необходимо согласие с политикой конфиденциальности',
-            'email_code.required' => 'Введите код подтверждения из письма',
-            'email_code.size'     => 'Код должен содержать 6 цифр',
-        ]);
+        ];
 
-        $verification = EmailVerification::where('email', $validated['email'])
-            ->where('code', $validated['email_code'])
-            ->where('expires_at', '>', now())
-            ->first();
+        if ($verificationEnabled) {
+            $rules['email_code'] = 'required|string|size:6';
+            $messages['email_code.required'] = 'Введите код подтверждения из письма';
+            $messages['email_code.size'] = 'Код должен содержать 6 цифр';
+        }
 
-        if (!$verification) {
-            $error = ['email_code' => 'Неверный или просроченный код подтверждения'];
+        $validated = $request->validate($rules, $messages);
 
-            if ($request->expectsJson()) {
-                return response()->json(['success' => false, 'errors' => $error], 422);
+        if ($verificationEnabled) {
+            $verification = EmailVerification::where('email', $validated['email'])
+                ->where('code', $validated['email_code'])
+                ->where('expires_at', '>', now())
+                ->first();
+
+            if (!$verification) {
+                $error = ['email_code' => 'Неверный или просроченный код подтверждения'];
+
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => false, 'errors' => $error], 422);
+                }
+                return back()->withErrors($error)->withInput();
             }
-            return back()->withErrors($error)->withInput();
+
+            $verification->delete();
         }
 
         $phoneClean = preg_replace('/[^0-9]/', '', $validated['phone']);
@@ -112,8 +126,6 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
             'role'     => 'user',
         ]);
-
-        $verification->delete();
 
         DB::table('chat_users')->insert([
             'user_id'       => 'user_' . $user->id,
