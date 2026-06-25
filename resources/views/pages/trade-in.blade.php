@@ -14,6 +14,33 @@
             font-size: clamp(1.25rem, 3.5vw, 24px);
             line-height: 1.5;
         }
+
+        .floating-label-group {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #4071CB;
+    font-size: 16px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.floating-label-group .form-control {
+    padding-left: 40px;
+}
+
+.floating-label-group label {
+    left: 40px;
+}
+
+.floating-label-group .form-control:read-only {
+    padding-left: 40px;
+}
     </style>
 @endpush
 

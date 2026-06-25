@@ -1150,6 +1150,10 @@
                 pointer-events: none;
                 text-transform: uppercase;
             }
+
+              .offer-image img {
+            width: 70%;
+        }
         }
 
         /* offer end */

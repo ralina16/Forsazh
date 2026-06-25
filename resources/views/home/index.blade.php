@@ -742,148 +742,136 @@
             });
         }
 
-        // Tabs functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const tabs = document.querySelectorAll('.tab-btn');
-            const contents = document.querySelectorAll('.tab-content');
+       document.addEventListener('DOMContentLoaded', function() {
 
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    tabs.forEach(btn => btn.classList.remove('active'));
-                    contents.forEach(c => c.style.display = 'none');
+    // ==================== TABS ====================
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
 
-                    tab.classList.add('active');
-                    const targetTab = document.getElementById(tab.dataset.tab);
-                    if (targetTab) {
-                        targetTab.style.display = 'block';
-                    }
-                });
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(btn => btn.classList.remove('active'));
+            contents.forEach(c => c.style.display = 'none');
+
+            tab.classList.add('active');
+            const targetTab = document.getElementById(tab.dataset.tab);
+            if (targetTab) {
+                targetTab.style.display = 'block';
+            }
+        });
+    });
+
+    // ==================== REVIEWS SLIDER ====================
+    const track = document.querySelector('.reviews-track');
+    const scrollLeftBtn = document.querySelector('.scroll-left');
+    const scrollRightBtn = document.querySelector('.scroll-right');
+
+    if (track && scrollLeftBtn && scrollRightBtn) {
+        let isScrolling = false;
+
+        function getScrollStep() {
+            const firstCard = track.querySelector('.review-card');
+            if (!firstCard) return 400;
+
+            const cardWidth = firstCard.offsetWidth;
+            const gap = parseFloat(getComputedStyle(track.querySelector('.reviews-container')).gap) || 24;
+
+            return cardWidth + gap;
+        }
+
+        function updateButtonVisibility() {
+            if (track.scrollLeft <= 0) {
+                scrollLeftBtn.style.display = 'none';
+            } else {
+                scrollLeftBtn.style.display = 'block';
+            }
+
+            const maxScrollLeft = track.scrollWidth - track.clientWidth;
+            if (track.scrollLeft >= maxScrollLeft - 1) {
+                scrollRightBtn.style.display = 'none';
+            } else {
+                scrollRightBtn.style.display = 'block';
+            }
+        }
+
+        function smoothScroll(container, direction) {
+            if (isScrolling) return;
+            isScrolling = true;
+            const scrollAmount = getScrollStep();
+            container.scrollBy({
+                left: direction === 'right' ? scrollAmount : -scrollAmount,
+                behavior: 'smooth'
             });
-
-            // Reviews slider
-            const track = document.querySelector('.reviews-track');
-            const scrollLeftBtn = document.querySelector('.scroll-left');
-            const scrollRightBtn = document.querySelector('.scroll-right');
-
-            if (track && scrollLeftBtn && scrollRightBtn) {
-                let isScrolling = false;
-
-                function getScrollStep() {
-                    const firstCard = track.querySelector('.review-card');
-                    if (!firstCard) return 400;
-
-                    const cardWidth = firstCard.offsetWidth;
-                    const gap = parseFloat(getComputedStyle(track.querySelector('.reviews-container')).gap) || 24;
-
-                    return cardWidth + gap;
-                }
-
-                function updateButtonVisibility() {
-                    if (track.scrollLeft <= 0) {
-                        scrollLeftBtn.style.display = 'none';
-                    } else {
-                        scrollLeftBtn.style.display = 'block';
-                    }
-
-                    const maxScrollLeft = track.scrollWidth - track.clientWidth;
-                    if (track.scrollLeft >= maxScrollLeft - 1) {
-                        scrollRightBtn.style.display = 'none';
-                    } else {
-                        scrollRightBtn.style.display = 'block';
-                    }
-                }
-
+            setTimeout(() => {
+                isScrolling = false;
                 updateButtonVisibility();
-                track.addEventListener('scroll', updateButtonVisibility);
-                window.addEventListener('resize', updateButtonVisibility);
+            }, 600);
+        }
 
-                scrollRightBtn.addEventListener('click', function() {
-                    if (isScrolling) return;
-                    smoothScroll(track, 'right');
-                });
+        updateButtonVisibility();
+        track.addEventListener('scroll', updateButtonVisibility);
+        window.addEventListener('resize', updateButtonVisibility);
 
-                scrollLeftBtn.addEventListener('click', function() {
-                    if (isScrolling) return;
-                    smoothScroll(track, 'left');
-                });
+        scrollRightBtn.addEventListener('click', function() {
+            if (!isScrolling) smoothScroll(track, 'right');
+        });
 
-                function smoothScroll(container, direction) {
-                    if (isScrolling) return;
-                    isScrolling = true;
-                    const scrollAmount = getScrollStep();
-                    container.scrollBy({
-                        left: direction === 'right' ? scrollAmount : -scrollAmount,
-                        behavior: 'smooth'
-                    });
-                    setTimeout(() => {
-                        isScrolling = false;
-                        updateButtonVisibility();
-                    }, 600);
-                }
-            }
-        })();
-    </script>
+        scrollLeftBtn.addEventListener('click', function() {
+            if (!isScrolling) smoothScroll(track, 'left');
+        });
+    }
 
-    <script>
-        (function() {
-            const slides = document.querySelectorAll('.hero-slide');
-            const dots = document.querySelectorAll('.hero-dot');
+    // ==================== HERO SLIDER ====================
+    const slides = document.querySelectorAll('.hero-slide');
+    const dots = document.querySelectorAll('.hero-dot');
 
-            if (!slides.length) return;
+    if (slides.length && dots.length) {
+        let currentSlide = 0;
+        let autoPlayInterval;
+        const autoPlayDelay = 4000;
 
-            let currentSlide = 0;
-            let autoPlayInterval;
-            const autoPlayDelay = 4000;
+        function goToSlide(index) {
+            slides.forEach(s => s.classList.remove('active'));
+            dots.forEach(d => d.classList.remove('active'));
 
-            function goToSlide(index) {
-                slides.forEach(s => s.classList.remove('active'));
-                dots.forEach(d => d.classList.remove('active'));
+            currentSlide = index;
 
-                currentSlide = index;
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+        }
 
-                slides[currentSlide].classList.add('active');
-                dots[currentSlide].classList.add('active');
-            }
+        function nextSlide() {
+            let next = currentSlide + 1;
+            if (next >= slides.length) next = 0;
+            goToSlide(next);
+        }
 
-            function nextSlide() {
-                let next = currentSlide + 1;
-                if (next >= slides.length) {
-                    next = 0;
-                }
-                goToSlide(next);
-            }
+        function startAutoPlay() {
+            autoPlayInterval = setInterval(nextSlide, autoPlayDelay);
+        }
 
-            function prevSlide() {
-                let prev = currentSlide - 1;
-                if (prev < 0) {
-                    prev = slides.length - 1;
-                }
-                goToSlide(prev);
-            }
+        function stopAutoPlay() {
+            clearInterval(autoPlayInterval);
+        }
 
-            function startAutoPlay() {
-                autoPlayInterval = setInterval(nextSlide, autoPlayDelay);
-            }
-
-            function stopAutoPlay() {
-                clearInterval(autoPlayInterval);
-            }
-
-            dots.forEach((dot, i) => {
-                dot.addEventListener('click', () => {
-                    goToSlide(i);
-                    stopAutoPlay();
-                    startAutoPlay();
-                });
+        dots.forEach((dot, i) => {
+            dot.addEventListener('click', () => {
+                goToSlide(i);
+                stopAutoPlay();
+                startAutoPlay();
             });
+        });
 
-            const slider = document.querySelector('.hero-slider');
-            if (slider) {
-                slider.addEventListener('mouseenter', stopAutoPlay);
-                slider.addEventListener('mouseleave', startAutoPlay);
-            }
+        const slider = document.querySelector('.hero-slider');
+        if (slider) {
+            slider.addEventListener('mouseenter', stopAutoPlay);
+            slider.addEventListener('mouseleave', startAutoPlay);
+        }
 
-            startAutoPlay();
-        })();
+        startAutoPlay();
+    }
+
+});
     </script>
+
 @endpush
