@@ -4,10 +4,8 @@
 
 @section('content')
 
-    <!-- Backdrop для мобильного фильтра -->
     <div class="filter-backdrop" id="filterBackdrop"></div>
 
-    <!-- Лёгкая модалка: Требуется регистрация -->
     @guest
         <div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" style="max-width: 390px;">

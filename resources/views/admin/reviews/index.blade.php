@@ -492,7 +492,6 @@
                             </form>
                         @endif
 
-                        {{-- Кнопка удалить --}}
                         <form method="POST" action="{{ route('admin.reviews.destroy', $review) }}" style="flex:1;">
                             @csrf
                             @method('DELETE')

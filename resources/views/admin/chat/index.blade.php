@@ -879,7 +879,6 @@
 
     <div class="app">
         <aside id="leftPanel" class="left-panel">
-            <!-- Вкладки -->
             <div class="chat-tabs">
                 <button class="chat-tab active" data-chat-type="mini_chat" onclick="switchChatType('mini_chat')">
                     Мини-чат

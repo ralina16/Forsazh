@@ -232,6 +232,8 @@
                     }
                 }
             </style>
+
+            
             <section class="features my-100" data-aos="fade-up" data-aos-delay="500">
                 <div class="container-xxl">
                     <div class="row g-4">

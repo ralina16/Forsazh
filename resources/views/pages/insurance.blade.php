@@ -173,7 +173,6 @@
             </div>
         </div>
 
-        <!-- НОВЫЙ БЛОК С ВИДАМИ СТРАХОВАНИЯ (ОСАГО/КАСКО) -->
         <div class="insurance-info">
             <div class="container-xxl">
                 <div class="section-header">

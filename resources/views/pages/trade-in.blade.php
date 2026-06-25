@@ -16,31 +16,31 @@
         }
 
         .floating-label-group {
-    position: relative;
-}
+            position: relative;
+        }
 
-.input-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #4071CB;
-    font-size: 16px;
-    z-index: 2;
-    pointer-events: none;
-}
+        .input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4071CB;
+            font-size: 16px;
+            z-index: 2;
+            pointer-events: none;
+        }
 
-.floating-label-group .form-control {
-    padding-left: 40px;
-}
+        .floating-label-group .form-control {
+            padding-left: 40px;
+        }
 
-.floating-label-group label {
-    left: 40px;
-}
+        .floating-label-group label {
+            left: 40px;
+        }
 
-.floating-label-group .form-control:read-only {
-    padding-left: 40px;
-}
+        .floating-label-group .form-control:read-only {
+            padding-left: 40px;
+        }
     </style>
 @endpush
 
@@ -116,8 +116,7 @@
                             <div class="floating-label-group">
                                 <span class="input-icon"><i class="fas fa-user"></i></span>
                                 @auth
-                                    <input type="text" id="name" name="name"
-                                        class="form-control" placeholder=" "
+                                    <input type="text" id="name" name="name" class="form-control" placeholder=" "
                                         value="{{ Auth::user()->name }}" readonly>
                                     <label for="name">Ваше имя</label>
                                     <input type="hidden" name="name" value="{{ Auth::user()->name }}">
@@ -142,14 +141,21 @@
                                         if ($userPhone) {
                                             $digits = preg_replace('/\D/', '', $userPhone);
                                             if (strlen($digits) === 11) {
-                                                $formattedPhone = '+7 (' . substr($digits, 1, 3) . ') ' . substr($digits, 4, 3) . '-' . substr($digits, 7, 2) . '-' . substr($digits, 9, 2);
+                                                $formattedPhone =
+                                                    '+7 (' .
+                                                    substr($digits, 1, 3) .
+                                                    ') ' .
+                                                    substr($digits, 4, 3) .
+                                                    '-' .
+                                                    substr($digits, 7, 2) .
+                                                    '-' .
+                                                    substr($digits, 9, 2);
                                             } else {
                                                 $formattedPhone = $userPhone;
                                             }
                                         }
                                     @endphp
-                                    <input type="tel" id="phone" name="phone"
-                                        class="form-control" placeholder=" "
+                                    <input type="tel" id="phone" name="phone" class="form-control" placeholder=" "
                                         value="{{ $formattedPhone }}" readonly>
                                     <label for="phone">Номер телефона</label>
                                     <input type="hidden" name="phone" value="{{ $formattedPhone }}">
@@ -283,7 +289,8 @@
                     <p class="mb-4" style="color:#4b5563; font-size:.95rem;">Мы свяжемся с вами в ближайшее время. <br>А
                         пока вы можете начать диалог в чате.</p>
 
-                    <button id="closeModalBtn" class="btn w-100" data-bs-dismiss="modal" style="background:#f3f4f6; color:#374151; border-radius:12px; padding:12px; font-weight:600; font-size:.95rem;">Закрыть</button>
+                    <button id="closeModalBtn" class="btn w-100" data-bs-dismiss="modal"
+                        style="background:#f3f4f6; color:#374151; border-radius:12px; padding:12px; font-weight:600; font-size:.95rem;">Закрыть</button>
                 </div>
             </div>
         </div>
@@ -299,114 +306,114 @@
     <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            @if (session('success'))
-                var successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                successModal.show();
-            @endif
+                @if (session('success'))
+                    var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                    successModal.show();
+                @endif
 
-            // Инициализация кастомных селектов
-            const selects = document.querySelectorAll('.custom-select');
-            selects.forEach(select => {
-                const header = select.querySelector('.select-header');
-                const dropdown = select.querySelector('.select-dropdown');
-                const selectedText = select.querySelector('.selected-text');
-                const hiddenInput = select.querySelector('input[type="hidden"]');
-                const chevron = select.querySelector('.chevron');
-                const items = dropdown.querySelectorAll('li');
+                // Инициализация кастомных селектов
+                const selects = document.querySelectorAll('.custom-select');
+                selects.forEach(select => {
+                    const header = select.querySelector('.select-header');
+                    const dropdown = select.querySelector('.select-dropdown');
+                    const selectedText = select.querySelector('.selected-text');
+                    const hiddenInput = select.querySelector('input[type="hidden"]');
+                    const chevron = select.querySelector('.chevron');
+                    const items = dropdown.querySelectorAll('li');
 
-                header.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    header.classList.toggle('active');
-                    if (chevron) chevron.style.transform = header.classList.contains('active') ?
-                        'rotate(180deg)' : 'rotate(0)';
-                });
-
-                items.forEach(item => {
-                    item.addEventListener('click', function(e) {
+                    header.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        const value = this.getAttribute('data-value').trim();
-                        const text = this.textContent;
-                        if (selectedText) selectedText.textContent = text;
-                        if (hiddenInput) hiddenInput.value = value;
-                        items.forEach(el => el.classList.remove('selected'));
-                        this.classList.add('selected');
-                        header.classList.remove('active');
-                        if (chevron) chevron.style.transform = 'rotate(0)';
-                        select.classList.remove('error');
+                        header.classList.toggle('active');
+                        if (chevron) chevron.style.transform = header.classList.contains('active') ?
+                            'rotate(180deg)' : 'rotate(0)';
+                    });
+
+                    items.forEach(item => {
+                        item.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const value = this.getAttribute('data-value').trim();
+                            const text = this.textContent;
+                            if (selectedText) selectedText.textContent = text;
+                            if (hiddenInput) hiddenInput.value = value;
+                            items.forEach(el => el.classList.remove('selected'));
+                            this.classList.add('selected');
+                            header.classList.remove('active');
+                            if (chevron) chevron.style.transform = 'rotate(0)';
+                            select.classList.remove('error');
+                        });
+                    });
+
+                    document.addEventListener('click', function() {
+                        if (header.classList.contains('active')) {
+                            header.classList.remove('active');
+                            if (chevron) chevron.style.transform = 'rotate(0)';
+                        }
                     });
                 });
 
-                document.addEventListener('click', function() {
-                    if (header.classList.contains('active')) {
-                        header.classList.remove('active');
-                        if (chevron) chevron.style.transform = 'rotate(0)';
-                    }
-                });
-            });
+                // Функция форматирования телефона (для неавторизованных)
+                function formatPhoneNumber(value) {
+                    let digits = value.replace(/\D/g, '');
+                    if (digits.startsWith('8')) digits = '7' + digits.substring(1);
+                    if (digits.length > 0 && !digits.startsWith('7')) digits = '7' + digits;
+                    digits = digits.substring(0, 11);
 
-            // Функция форматирования телефона (для неавторизованных)
-            function formatPhoneNumber(value) {
-                let digits = value.replace(/\D/g, '');
-                if (digits.startsWith('8')) digits = '7' + digits.substring(1);
-                if (digits.length > 0 && !digits.startsWith('7')) digits = '7' + digits;
-                digits = digits.substring(0, 11);
-                
-                let formatted = '';
-                if (digits.length > 0) {
-                    formatted = '+7';
-                    if (digits.length > 1) {
-                        formatted += ' (' + digits.substring(1, 4);
-                        if (digits.length > 4) {
-                            formatted += ') ' + digits.substring(4, 7);
-                            if (digits.length > 7) {
-                                formatted += '-' + digits.substring(7, 9);
-                                if (digits.length > 9) {
-                                    formatted += '-' + digits.substring(9, 11);
+                    let formatted = '';
+                    if (digits.length > 0) {
+                        formatted = '+7';
+                        if (digits.length > 1) {
+                            formatted += ' (' + digits.substring(1, 4);
+                            if (digits.length > 4) {
+                                formatted += ') ' + digits.substring(4, 7);
+                                if (digits.length > 7) {
+                                    formatted += '-' + digits.substring(7, 9);
+                                    if (digits.length > 9) {
+                                        formatted += '-' + digits.substring(9, 11);
+                                    }
                                 }
+                            } else if (digits.length > 1) {
+                                formatted += ')';
                             }
-                        } else if (digits.length > 1) {
-                            formatted += ')';
                         }
                     }
+                    return formatted;
                 }
-                return formatted;
-            }
 
-            // Маска для телефона (только для неавторизованных)
-            @guest
-            const phoneInput = document.getElementById("phone");
-            if (phoneInput) {
-                phoneInput.addEventListener("input", function(e) {
-                    const formatted = formatPhoneNumber(this.value);
-                    this.value = formatted;
-                });
+                // Маска для телефона (только для неавторизованных)
+                @guest
+                const phoneInput = document.getElementById("phone");
+                if (phoneInput) {
+                    phoneInput.addEventListener("input", function(e) {
+                        const formatted = formatPhoneNumber(this.value);
+                        this.value = formatted;
+                    });
 
-                phoneInput.addEventListener('focus', function() {
-                    if (!this.value.trim()) {
-                        this.value = '+7 (';
-                        this.setSelectionRange(4, 4);
-                    }
-                });
-
-                phoneInput.addEventListener('blur', function() {
-                    const phoneRegex = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
-                    if (this.value && !phoneRegex.test(this.value)) {
-                        this.classList.add('error');
-                        const parent = this.closest('.floating-label-group');
-                        if (parent && !parent.querySelector('.error-message')) {
-                            const errorElement = document.createElement('span');
-                            errorElement.className = 'error-message';
-                            errorElement.textContent = 'Введите номер в формате: +7 (XXX) XXX-XX-XX';
-                            parent.appendChild(errorElement);
+                    phoneInput.addEventListener('focus', function() {
+                        if (!this.value.trim()) {
+                            this.value = '+7 (';
+                            this.setSelectionRange(4, 4);
                         }
-                    } else {
-                        this.classList.remove('error');
-                        const parent = this.closest('.floating-label-group');
-                        const existingError = parent?.querySelector('.error-message');
-                        if (existingError) existingError.remove();
-                    }
-                });
-            }
+                    });
+
+                    phoneInput.addEventListener('blur', function() {
+                        const phoneRegex = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
+                        if (this.value && !phoneRegex.test(this.value)) {
+                            this.classList.add('error');
+                            const parent = this.closest('.floating-label-group');
+                            if (parent && !parent.querySelector('.error-message')) {
+                                const errorElement = document.createElement('span');
+                                errorElement.className = 'error-message';
+                                errorElement.textContent = 'Введите номер в формате: +7 (XXX) XXX-XX-XX';
+                                parent.appendChild(errorElement);
+                            }
+                        } else {
+                            this.classList.remove('error');
+                            const parent = this.closest('.floating-label-group');
+                            const existingError = parent?.querySelector('.error-message');
+                            if (existingError) existingError.remove();
+                        }
+                    });
+                }
             @endguest
 
             // Валидация имени в реальном времени (только для неавторизованных)
@@ -432,128 +439,129 @@
                     }
                 });
             }
-            @endguest
+        @endguest
 
-            // Обработка формы Trade-in
-            const tradeInForm = document.getElementById('tradeInForm');
-            const submitBtn = tradeInForm ? tradeInForm.querySelector('button[type="submit"]') : null;
+        // Обработка формы Trade-in
+        const tradeInForm = document.getElementById('tradeInForm');
+        const submitBtn = tradeInForm ? tradeInForm.querySelector('button[type="submit"]') : null;
 
-            if (tradeInForm && submitBtn) {
-                tradeInForm.addEventListener('submit', function(e) {
-                    let isValid = true;
+        if (tradeInForm && submitBtn) {
+            tradeInForm.addEventListener('submit', function(e) {
+                let isValid = true;
 
-                    document.querySelectorAll('.error-message').forEach(el => el.remove());
-                    document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
-                    document.querySelectorAll('.custom-select.error').forEach(el => el.classList.remove('error'));
+                document.querySelectorAll('.error-message').forEach(el => el.remove());
+                document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
+                document.querySelectorAll('.custom-select.error').forEach(el => el.classList.remove('error'));
 
-                    const formData = new FormData(tradeInForm);
-                    const name = formData.get('name');
-                    const phone = formData.get('phone');
-                    const dealer_center = formData.get('dealer_center');
+                const formData = new FormData(tradeInForm);
+                const name = formData.get('name');
+                const phone = formData.get('phone');
+                const dealer_center = formData.get('dealer_center');
 
-                    // Валидация имени (только если поле не readonly)
-                    const nameField = document.getElementById('name');
-                    if (nameField && !nameField.readOnly) {
-                        if (!name) {
-                            showFieldError('name', 'Поле "Ваше имя" обязательно для заполнения');
-                            isValid = false;
-                        } else if (name.length < 2) {
-                            showFieldError('name', 'Имя должно содержать минимум 2 символа');
-                            isValid = false;
-                        } else if (name.length > 50) {
-                            showFieldError('name', 'Имя не должно превышать 50 символов');
-                            isValid = false;
-                        } else if (!/^[а-яА-ЯёЁa-zA-Z\s\-]+$/.test(name)) {
-                            showFieldError('name', 'Имя должно содержать только буквы, пробелы и дефисы');
-                            isValid = false;
-                        }
-                    }
-
-                    // Валидация телефона (только если поле не readonly)
-                    const phoneField = document.getElementById('phone');
-                    if (phoneField && !phoneField.readOnly) {
-                        if (!phone) {
-                            showFieldError('phone', 'Поле "Номер телефона" обязательно для заполнения');
-                            isValid = false;
-                        } else {
-                            const phoneRegex = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
-                            if (!phoneRegex.test(phone)) {
-                                showFieldError('phone', 'Введите корректный номер телефона в формате: +7 (XXX) XXX-XX-XX');
-                                isValid = false;
-                            }
-                        }
-                    }
-
-                    if (!dealer_center) {
-                        showFieldError('dc-select', 'Пожалуйста, выберите дилерский центр');
+                // Валидация имени (только если поле не readonly)
+                const nameField = document.getElementById('name');
+                if (nameField && !nameField.readOnly) {
+                    if (!name) {
+                        showFieldError('name', 'Поле "Ваше имя" обязательно для заполнения');
+                        isValid = false;
+                    } else if (name.length < 2) {
+                        showFieldError('name', 'Имя должно содержать минимум 2 символа');
+                        isValid = false;
+                    } else if (name.length > 50) {
+                        showFieldError('name', 'Имя не должно превышать 50 символов');
+                        isValid = false;
+                    } else if (!/^[а-яА-ЯёЁa-zA-Z\s\-]+$/.test(name)) {
+                        showFieldError('name', 'Имя должно содержать только буквы, пробелы и дефисы');
                         isValid = false;
                     }
+                }
 
-                    if (!isValid) {
-                        e.preventDefault();
-                        return;
+                // Валидация телефона (только если поле не readonly)
+                const phoneField = document.getElementById('phone');
+                if (phoneField && !phoneField.readOnly) {
+                    if (!phone) {
+                        showFieldError('phone', 'Поле "Номер телефона" обязательно для заполнения');
+                        isValid = false;
+                    } else {
+                        const phoneRegex = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
+                        if (!phoneRegex.test(phone)) {
+                            showFieldError('phone',
+                                'Введите корректный номер телефона в формате: +7 (XXX) XXX-XX-XX');
+                            isValid = false;
+                        }
                     }
-                });
-            }
+                }
 
-            function showFieldError(fieldId, message) {
-                const field = document.getElementById(fieldId);
-                if (field) {
-                    field.classList.add('error');
+                if (!dealer_center) {
+                    showFieldError('dc-select', 'Пожалуйста, выберите дилерский центр');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                    return;
+                }
+            });
+        }
+
+        function showFieldError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.classList.add('error');
+                const errorElement = document.createElement('span');
+                errorElement.className = 'error-message';
+                errorElement.textContent = message;
+                const parent = field.closest('.col-md-6') || field.closest('.col-md-12') || field.parentElement;
+                if (parent) {
+                    parent.appendChild(errorElement);
+                }
+            } else {
+                // Для кастомного селекта
+                const selectContainer = document.getElementById('dc-select');
+                if (selectContainer) {
+                    selectContainer.classList.add('error');
                     const errorElement = document.createElement('span');
                     errorElement.className = 'error-message';
                     errorElement.textContent = message;
-                    const parent = field.closest('.col-md-6') || field.closest('.col-md-12') || field.parentElement;
-                    if (parent) {
-                        parent.appendChild(errorElement);
-                    }
-                } else {
-                    // Для кастомного селекта
-                    const selectContainer = document.getElementById('dc-select');
-                    if (selectContainer) {
-                        selectContainer.classList.add('error');
-                        const errorElement = document.createElement('span');
-                        errorElement.className = 'error-message';
-                        errorElement.textContent = message;
-                        selectContainer.parentElement.appendChild(errorElement);
-                    }
+                    selectContainer.parentElement.appendChild(errorElement);
                 }
             }
+        }
 
-            // Обработчики для модального окна
-            document.getElementById('closeModalBtn')?.addEventListener('click', function() {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('successModal'));
-                if (modal) modal.hide();
-            });
+        // Обработчики для модального окна
+        document.getElementById('closeModalBtn')?.addEventListener('click', function() {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('successModal'));
+            if (modal) modal.hide();
+        });
 
-            const toggleBtn = document.getElementById('docToggle');
-            const docList = document.getElementById('docList');
+        const toggleBtn = document.getElementById('docToggle');
+        const docList = document.getElementById('docList');
 
-            if (toggleBtn && docList) {
-                toggleBtn.addEventListener('click', () => {
-                    docList.classList.add('expanded');
-                    toggleBtn.style.display = 'none';
-                    docList.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
+        if (toggleBtn && docList) {
+            toggleBtn.addEventListener('click', () => {
+                docList.classList.add('expanded');
+                toggleBtn.style.display = 'none';
+                docList.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
                 });
-            }
-
-            const steps = document.getElementById('tradeSteps');
-            if (steps) {
-                steps.scrollLeft = 0;
-                setTimeout(() => {
-                    steps.scrollLeft = 0;
-                }, 50);
-            }
-
-            AOS.init({
-                duration: 800,
-                easing: 'ease-in-out',
-                once: true,
-                offset: 100
             });
+        }
+
+        const steps = document.getElementById('tradeSteps');
+        if (steps) {
+            steps.scrollLeft = 0;
+            setTimeout(() => {
+                steps.scrollLeft = 0;
+            }, 50);
+        }
+
+        AOS.init({
+        duration: 800,
+        easing: 'ease-in-out',
+        once: true,
+        offset: 100
+        });
         });
     </script>
 @endpush

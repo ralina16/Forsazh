@@ -114,9 +114,17 @@
     }
 
     @keyframes badgePop {
-        0% { transform: scale(0); }
-        80% { transform: scale(1.2); }
-        100% { transform: scale(1); }
+        0% {
+            transform: scale(0);
+        }
+
+        80% {
+            transform: scale(1.2);
+        }
+
+        100% {
+            transform: scale(1);
+        }
     }
 
     .mini-chat-name-wrapper {
@@ -652,7 +660,7 @@
         position: absolute;
         top: 10px;
         right: 15px;
-        background: rgba(0,0,0,0.05);
+        background: rgba(0, 0, 0, 0.05);
         border: none;
         border-radius: 4px;
         padding: 4px;
@@ -1233,8 +1241,8 @@
     }
 
     .mini-message.received.message-new {
-    box-shadow: 0 2px 12px rgba(64, 113, 203, 0.15);
-}
+        box-shadow: 0 2px 12px rgba(64, 113, 203, 0.15);
+    }
 
     body.chat-open .contact-item {
         padding: 14px;
@@ -1309,662 +1317,685 @@
         })();
     </script>
 
-   
-<script>
-class MiniChat {
-    constructor() {
-        this.isOpen = false;
-        this.isRegistered = false;
-        this.isGuest = true;
-        this.userPhone = '';
-        this.userName = '';
-        this.userId = 'guest_' + Math.random().toString(36).substr(2, 9);
-        this.lastMessageId = 0;
-        this.messages = [];
-        this.aiResponseLock = false;
-        this.isSending = false;
-        this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-        this.unreadCount = 0;
-        this.draftKey = 'mini_chat_draft_' + (this.csrfToken?.slice(-8) || 'guest');
-        this.readKey = 'mini_chat_read_' + this.userId;
-        
-        this.setStatus = this.setStatus.bind(this);
-        this.updateStatus = this.updateStatus.bind(this);
-        this.init = this.init.bind(this);
-        this.checkRegistration = this.checkRegistration.bind(this);
-        this.toggle = this.toggle.bind(this);
-        this.open = this.open.bind(this);
-        this.close = this.close.bind(this);
-        this.sendMessage = this.sendMessage.bind(this);
-        
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.init());
-        } else {
-            this.init();
-        }
-    }
 
-    init() {
-        const chatBtn = document.getElementById('chatBtn');
-        const chatModal = document.getElementById('miniChatModal');
-        if (!chatBtn || !chatModal) {
-            console.error('Chat elements not found');
-            return;
-        }
+    <script>
+        class MiniChat {
+            constructor() {
+                this.isOpen = false;
+                this.isRegistered = false;
+                this.isGuest = true;
+                this.userPhone = '';
+                this.userName = '';
+                this.userId = 'guest_' + Math.random().toString(36).substr(2, 9);
+                this.lastMessageId = 0;
+                this.messages = [];
+                this.aiResponseLock = false;
+                this.isSending = false;
+                this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                this.unreadCount = 0;
+                this.draftKey = 'mini_chat_draft_' + (this.csrfToken?.slice(-8) || 'guest');
+                this.readKey = 'mini_chat_read_' + this.userId;
 
-        this.setStatus('loading', 'Загрузка...');
-        this.bindEvents();
-        this.updateStatus();
-        this.startStatusUpdates();
-        this.checkRegistration();
-    }
+                this.setStatus = this.setStatus.bind(this);
+                this.updateStatus = this.updateStatus.bind(this);
+                this.init = this.init.bind(this);
+                this.checkRegistration = this.checkRegistration.bind(this);
+                this.toggle = this.toggle.bind(this);
+                this.open = this.open.bind(this);
+                this.close = this.close.bind(this);
+                this.sendMessage = this.sendMessage.bind(this);
 
-    setStatus(type, text) {
-        const dot = document.getElementById('statusDot');
-        const txt = document.getElementById('statusText');
-        if (dot) dot.className = 'status-dot ' + type;
-        if (txt) {
-            txt.className = 'status-text ' + type;
-            txt.textContent = text;
-        }
-    }
-
-    updateStatus() {
-        const h = new Date().getHours();
-        const work = h >= 9 && h < 18;
-        this.setStatus(
-            work ? 'online' : 'offline',
-            work ? 'Онлайн • до 18:00' : 'Не в сети • с 9:00'
-        );
-    }
-
-    startStatusUpdates() {
-        setInterval(() => this.updateStatus(), 60000);
-    }
-
-    async checkRegistration() {
-        try {
-            const res = await fetch("{{ route('chat.check') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': this.csrfToken
-                },
-                credentials: 'same-origin'
-            });
-            const data = await res.json();
-            
-            this.isGuest = data.is_guest ?? true;
-            this.isRegistered = data.is_logged_in ?? false;
-            this.userPhone = data.phone || '';
-            this.userName = data.name || '';
-            this.userId = data.user_id || this.userId;
-            this.readKey = 'mini_chat_read_' + this.userId;
-            
-            this.showChatView();
-            this.loadMessages();
-        } catch (e) {
-            console.error('Check registration error:', e);
-            this.isGuest = true;
-            this.isRegistered = false;
-            this.showChatView();
-            this.loadMessages();
-        }
-    }
-
-    showChatView() {
-        this.hideAllModals();
-        const reg = document.getElementById('registrationModal');
-        const chat = document.getElementById('chatContent');
-        
-        if (reg) reg.style.display = 'none';
-        if (chat) chat.style.display = 'flex';
-        
-        this.loadMessages();
-    }
-
-    hideAllModals() {
-        ['registrationModal', 'confirmClearModal', 'complaintModal', 'contactSalonModal'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                if (id === 'registrationModal') el.style.display = 'none';
-                else el.classList.remove('active');
-            }
-        });
-    }
-
-    bindEvents() {
-        const btn = document.getElementById('chatBtn');
-        const modal = document.getElementById('miniChatModal');
-        
-        if (btn) {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggle();
-            });
-        }
-        
-        if (modal) {
-            document.addEventListener('click', (e) => {
-                if (this.isOpen && !modal.contains(e.target) && !btn?.contains(e.target)) {
-                    this.close();
-                }
-            });
-        }
-
-        const menu = document.getElementById('miniChatMenu');
-        const drop = document.getElementById('miniChatDropdown');
-        if (menu && drop) {
-            menu.addEventListener('click', (e) => {
-                e.stopPropagation();
-                drop.classList.toggle('show');
-            });
-            document.addEventListener('click', () => drop.classList.remove('show'));
-        }
-
-        document.querySelectorAll('.dropdown-item').forEach(i => {
-            i.addEventListener('click', (e) => {
-                this.handleMenuAction(e.currentTarget.dataset.action);
-                drop?.classList.remove('show');
-            });
-        });
-
-        const send = document.getElementById('miniChatSend');
-        const inp = document.getElementById('miniChatInput');
-        
-        if (send) send.addEventListener('click', () => this.sendMessage());
-        if (inp) {
-            inp.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.sendMessage();
-                }
-            });
-        }
-
-        document.querySelectorAll('.mini-chip').forEach(c => {
-            c.addEventListener('click', async (e) => {
-                const a = e.currentTarget.dataset.action;
-                if (a === 'callback' && this.userPhone) {
-                    const i = document.getElementById('miniChatInput');
-                    if (i) {
-                        i.value = `Пожалуйста, перезвоните мне на номер ${this.formatPhoneForDisplay(this.userPhone)}`;
-                        i.focus();
-                    }
-                } else if (['callback', 'price'].includes(a)) {
-                    await this.sendTemplateMessage(a);
-                }
-            });
-        });
-
-        this.bindModalEvents();
-    }
-
-    bindModalEvents() {
-        ['confirmClearClose', 'confirmClearCancel', 'complaintModalClose', 'complaintCancel',
-            'contactSalonClose', 'contactSalonBack'
-        ].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.addEventListener('click', () => this.showChatView());
-        });
-        
-        const ok = document.getElementById('confirmClearOk');
-        if (ok) ok.addEventListener('click', () => this.clearChatConfirmed());
-        
-        const cf = document.getElementById('complaintForm');
-        if (cf) cf.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.submitComplaint();
-        });
-    }
-
-    async loadMessages() {
-        try {
-            const res = await fetch("{{ route('chat.messages') }}?last_id=" + this.lastMessageId, {
-                headers: {
-                    'X-CSRF-TOKEN': this.csrfToken
-                },
-                credentials: 'same-origin'
-            });
-            const data = await res.json();
-            
-            if (data.success && data.messages?.length > 0) {
-                const container = document.getElementById('miniChatMessages');
-                if (container && this.lastMessageId === 0) {
-                    container.innerHTML = '';
-                    this.messages = [];
-                }
-                
-                const savedReadId = parseInt(localStorage.getItem(this.readKey) || '0');
-                
-                data.messages.forEach(msg => {
-                    if (!this.messages.find(m => m.id === msg.id)) {
-                        if (!msg.is_read && msg.dir === 'received' && msg.id <= savedReadId) {
-                            msg.is_read = true;
-                        }
-                        
-                        this.messages.push(msg);
-                        this.addMessageToDOM(msg);
-                        if (msg.id > this.lastMessageId) {
-                            this.lastMessageId = msg.id;
-                            if (!this.isOpen && msg.dir === 'received' && !msg.is_read) {
-                                this.unreadCount++;
-                                this.updateBadge();
-                                this.playNotificationSound();
-                            }
-                        }
-                    }
-                });
-                this.scrollToBottom();
-            }
-        } catch (e) {
-            console.error('Load messages error:', e);
-        }
-    }
-
-    async markAsRead() {
-        document.querySelectorAll('.mini-message.received.message-new').forEach(el => {
-            el.classList.remove('message-new');
-        });
-        
-        const lastReceived = [...this.messages].reverse().find(m => m.dir === 'received');
-        if (lastReceived) {
-            localStorage.setItem(this.readKey, lastReceived.id);
-        }
-        
-        try {
-            await fetch("{{ route('chat.read') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': this.csrfToken
-                },
-                credentials: 'same-origin'
-            });
-        } catch (e) {
-            console.log('Mark read error:', e);
-        }
-    }
-
-    async sendTemplateMessage(a) {
-        if (this.isGuest) {
-            this.showAuthRequiredMessage();
-            return;
-        }
-
-        if (!this.isRegistered || this.isSending) return;
-
-        if (a === 'price') {
-            this.showTypingIndicator();
-            try {
-                const r = await fetch("{{ route('chat.price') }}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': this.csrfToken
-                    },
-                    credentials: 'same-origin'
-                });
-                const d = await r.json();
-                this.hideTypingIndicator();
-
-                if (d.success) {
-                    const m = {
-                        id: d.message_id,
-                        text: d.text,
-                        dir: 'received',
-                        time: this.getCurrentTime(),
-                        format: d.format,
-                        html: d.html,
-                        is_read: false
-                    };
-                    this.addMessageToDOM(m);
-                    this.messages.push(m);
-                    this.scrollToBottom();
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => this.init());
                 } else {
-                    this.showNotification(d.error || 'Ошибка сервера', 'error');
+                    this.init();
                 }
-            } catch (e) {
-                this.hideTypingIndicator();
-                console.error('Price fetch error:', e);
-                this.showNotification('Ошибка загрузки прайса', 'error');
             }
-            return;
-        }
 
-        if (a === 'callback') {
-            await this.sendMessageDirectly('Пожалуйста, перезвоните мне');
-            await this.sendAdminResponse('Спасибо! Мы перезвоним вам в ближайшее время.');
-        }
-    }
+            init() {
+                const chatBtn = document.getElementById('chatBtn');
+                const chatModal = document.getElementById('miniChatModal');
+                if (!chatBtn || !chatModal) {
+                    console.error('Chat elements not found');
+                    return;
+                }
 
-    addMessageToDOM(m) {
-        const c = document.getElementById('miniChatMessages');
-        if (!c || c.querySelector(`[data-id="${m.id}"]`)) return;
+                this.setStatus('loading', 'Загрузка...');
+                this.bindEvents();
+                this.updateStatus();
+                this.startStatusUpdates();
+                this.checkRegistration();
+            }
 
-        const el = document.createElement('div');
-        el.className = `mini-message ${m.dir === 'sent' ? 'sent' : 'received'}`;
-        if (!m.is_read && m.dir === 'received') {
-            el.classList.add('message-new');
-        }
-        el.dataset.id = m.id;
-        if (m.isTemp) el.dataset.temp = 'true';
+            setStatus(type, text) {
+                const dot = document.getElementById('statusDot');
+                const txt = document.getElementById('statusText');
+                if (dot) dot.className = 'status-dot ' + type;
+                if (txt) {
+                    txt.className = 'status-text ' + type;
+                    txt.textContent = text;
+                }
+            }
 
-        if (m.format === 'price_card' && m.html) {
-            el.innerHTML = `
+            updateStatus() {
+                const h = new Date().getHours();
+                const work = h >= 9 && h < 18;
+                this.setStatus(
+                    work ? 'online' : 'offline',
+                    work ? 'Онлайн • до 18:00' : 'Не в сети • с 9:00'
+                );
+            }
+
+            startStatusUpdates() {
+                setInterval(() => this.updateStatus(), 60000);
+            }
+
+            async checkRegistration() {
+                try {
+                    const res = await fetch("{{ route('chat.check') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrfToken
+                        },
+                        credentials: 'same-origin'
+                    });
+                    const data = await res.json();
+
+                    this.isGuest = data.is_guest ?? true;
+                    this.isRegistered = data.is_logged_in ?? false;
+                    this.userPhone = data.phone || '';
+                    this.userName = data.name || '';
+                    this.userId = data.user_id || this.userId;
+                    this.readKey = 'mini_chat_read_' + this.userId;
+
+                    this.showChatView();
+                    this.loadMessages();
+                } catch (e) {
+                    console.error('Check registration error:', e);
+                    this.isGuest = true;
+                    this.isRegistered = false;
+                    this.showChatView();
+                    this.loadMessages();
+                }
+            }
+
+            showChatView() {
+                this.hideAllModals();
+                const reg = document.getElementById('registrationModal');
+                const chat = document.getElementById('chatContent');
+
+                if (reg) reg.style.display = 'none';
+                if (chat) chat.style.display = 'flex';
+
+                this.loadMessages();
+            }
+
+            hideAllModals() {
+                ['registrationModal', 'confirmClearModal', 'complaintModal', 'contactSalonModal'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        if (id === 'registrationModal') el.style.display = 'none';
+                        else el.classList.remove('active');
+                    }
+                });
+            }
+
+            bindEvents() {
+                const btn = document.getElementById('chatBtn');
+                const modal = document.getElementById('miniChatModal');
+
+                if (btn) {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggle();
+                    });
+                }
+
+                if (modal) {
+                    document.addEventListener('click', (e) => {
+                        if (this.isOpen && !modal.contains(e.target) && !btn?.contains(e.target)) {
+                            this.close();
+                        }
+                    });
+                }
+
+                const menu = document.getElementById('miniChatMenu');
+                const drop = document.getElementById('miniChatDropdown');
+                if (menu && drop) {
+                    menu.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        drop.classList.toggle('show');
+                    });
+                    document.addEventListener('click', () => drop.classList.remove('show'));
+                }
+
+                document.querySelectorAll('.dropdown-item').forEach(i => {
+                    i.addEventListener('click', (e) => {
+                        this.handleMenuAction(e.currentTarget.dataset.action);
+                        drop?.classList.remove('show');
+                    });
+                });
+
+                const send = document.getElementById('miniChatSend');
+                const inp = document.getElementById('miniChatInput');
+
+                if (send) send.addEventListener('click', () => this.sendMessage());
+                if (inp) {
+                    inp.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            this.sendMessage();
+                        }
+                    });
+                }
+
+                document.querySelectorAll('.mini-chip').forEach(c => {
+                    c.addEventListener('click', async (e) => {
+                        const a = e.currentTarget.dataset.action;
+                        if (a === 'callback' && this.userPhone) {
+                            const i = document.getElementById('miniChatInput');
+                            if (i) {
+                                i.value =
+                                    `Пожалуйста, перезвоните мне на номер ${this.formatPhoneForDisplay(this.userPhone)}`;
+                                i.focus();
+                            }
+                        } else if (['callback', 'price'].includes(a)) {
+                            await this.sendTemplateMessage(a);
+                        }
+                    });
+                });
+
+                this.bindModalEvents();
+            }
+
+            bindModalEvents() {
+                ['confirmClearClose', 'confirmClearCancel', 'complaintModalClose', 'complaintCancel',
+                    'contactSalonClose', 'contactSalonBack'
+                ].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.addEventListener('click', () => this.showChatView());
+                });
+
+                const ok = document.getElementById('confirmClearOk');
+                if (ok) ok.addEventListener('click', () => this.clearChatConfirmed());
+
+                const cf = document.getElementById('complaintForm');
+                if (cf) cf.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.submitComplaint();
+                });
+            }
+
+            async loadMessages() {
+                try {
+                    const res = await fetch("{{ route('chat.messages') }}?last_id=" + this.lastMessageId, {
+                        headers: {
+                            'X-CSRF-TOKEN': this.csrfToken
+                        },
+                        credentials: 'same-origin'
+                    });
+                    const data = await res.json();
+
+                    if (data.success && data.messages?.length > 0) {
+                        const container = document.getElementById('miniChatMessages');
+                        if (container && this.lastMessageId === 0) {
+                            container.innerHTML = '';
+                            this.messages = [];
+                        }
+
+                        const savedReadId = parseInt(localStorage.getItem(this.readKey) || '0');
+
+                        data.messages.forEach(msg => {
+                            if (!this.messages.find(m => m.id === msg.id)) {
+                                if (!msg.is_read && msg.dir === 'received' && msg.id <= savedReadId) {
+                                    msg.is_read = true;
+                                }
+
+                                this.messages.push(msg);
+                                this.addMessageToDOM(msg);
+                                if (msg.id > this.lastMessageId) {
+                                    this.lastMessageId = msg.id;
+                                    if (!this.isOpen && msg.dir === 'received' && !msg.is_read) {
+                                        this.unreadCount++;
+                                        this.updateBadge();
+                                        this.playNotificationSound();
+                                    }
+                                }
+                            }
+                        });
+                        this.scrollToBottom();
+                    }
+                } catch (e) {
+                    console.error('Load messages error:', e);
+                }
+            }
+
+            async markAsRead() {
+                document.querySelectorAll('.mini-message.received.message-new').forEach(el => {
+                    el.classList.remove('message-new');
+                });
+
+                const lastReceived = [...this.messages].reverse().find(m => m.dir === 'received');
+                if (lastReceived) {
+                    localStorage.setItem(this.readKey, lastReceived.id);
+                }
+
+                try {
+                    await fetch("{{ route('chat.read') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrfToken
+                        },
+                        credentials: 'same-origin'
+                    });
+                } catch (e) {
+                    console.log('Mark read error:', e);
+                }
+            }
+
+            async sendTemplateMessage(a) {
+                if (this.isGuest) {
+                    this.showAuthRequiredMessage();
+                    return;
+                }
+
+                if (!this.isRegistered || this.isSending) return;
+
+                if (a === 'price') {
+                    this.showTypingIndicator();
+                    try {
+                        const r = await fetch("{{ route('chat.price') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': this.csrfToken
+                            },
+                            credentials: 'same-origin'
+                        });
+                        const d = await r.json();
+                        this.hideTypingIndicator();
+
+                        if (d.success) {
+                            const m = {
+                                id: d.message_id,
+                                text: d.text,
+                                dir: 'received',
+                                time: this.getCurrentTime(),
+                                format: d.format,
+                                html: d.html,
+                                is_read: false
+                            };
+                            this.addMessageToDOM(m);
+                            this.messages.push(m);
+                            this.scrollToBottom();
+                        } else {
+                            this.showNotification(d.error || 'Ошибка сервера', 'error');
+                        }
+                    } catch (e) {
+                        this.hideTypingIndicator();
+                        console.error('Price fetch error:', e);
+                        this.showNotification('Ошибка загрузки прайса', 'error');
+                    }
+                    return;
+                }
+
+                if (a === 'callback') {
+                    await this.sendMessageDirectly('Пожалуйста, перезвоните мне');
+                    await this.sendAdminResponse('Спасибо! Мы перезвоним вам в ближайшее время.');
+                }
+            }
+
+            addMessageToDOM(m) {
+                const c = document.getElementById('miniChatMessages');
+                if (!c || c.querySelector(`[data-id="${m.id}"]`)) return;
+
+                const el = document.createElement('div');
+                el.className = `mini-message ${m.dir === 'sent' ? 'sent' : 'received'}`;
+                if (!m.is_read && m.dir === 'received') {
+                    el.classList.add('message-new');
+                }
+                el.dataset.id = m.id;
+                if (m.isTemp) el.dataset.temp = 'true';
+
+                if (m.format === 'price_card' && m.html) {
+                    el.innerHTML = `
                 <div class="mini-message-text" style="width:100%">
                     <div style="font-weight:500;margin-bottom:6px;">${this.escapeHtml(m.text)}</div>
                     ${m.html}
                 </div>
                 <div class="mini-message-time">${m.time}</div>
             `;
-        } else if (m.format === 'html') {
-            el.innerHTML = `
+                } else if (m.format === 'html') {
+                    el.innerHTML = `
                 <div class="mini-message-content">
                     <div class="mini-message-text">${m.text}</div>
                     <div class="mini-message-time">${m.time}</div>
                 </div>
             `;
-        } else {
-            const hasHtml = /<[a-z][\s\S]*>/i.test(m.text);
-            el.innerHTML = `
+                } else {
+                    const hasHtml = /<[a-z][\s\S]*>/i.test(m.text);
+                    el.innerHTML = `
                 <div class="mini-message-content">
                     <div class="mini-message-text">${hasHtml ? m.text : this.escapeHtml(m.text)}</div>
                     <div class="mini-message-time">${m.time}</div>
                 </div>
             `;
-        }
+                }
 
-        if (m.dir === 'received') {
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'message-copy-btn';
-            copyBtn.title = 'Копировать';
-            copyBtn.innerHTML = `<svg width="25" height="25" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                if (m.dir === 'received') {
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'message-copy-btn';
+                    copyBtn.title = 'Копировать';
+                    copyBtn.innerHTML = `<svg width="25" height="25" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M16 12.9V17.1C16 20.6 14.6 22 11.1 22H6.9C3.4 22 2 20.6 2 17.1V12.9C2 9.4 3.4 8 6.9 8H11.1C14.6 8 16 9.4 16 12.9Z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M22 6.9V11.1C22 14.6 20.6 16 17.1 16H16V12.9C16 9.4 14.6 8 11.1 8H8V6.9C8 3.4 9.4 2 12.9 2H17.1C20.6 2 22 3.4 22 6.9Z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;
-            copyBtn.onclick = (e) => {
-                e.stopPropagation();
-                const textToCopy = m.format === 'price_card' ? m.text : (m.text.replace(/<[^>]*>/g, ''));
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    this.showNotification('Скопировано', 'success');
-                });
-            };
-            el.appendChild(copyBtn);
-        }
+                    copyBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        const textToCopy = m.format === 'price_card' ? m.text : (m.text.replace(/<[^>]*>/g, ''));
+                        navigator.clipboard.writeText(textToCopy).then(() => {
+                            this.showNotification('Скопировано', 'success');
+                        });
+                    };
+                    el.appendChild(copyBtn);
+                }
 
-        c.appendChild(el);
-    }
-
-    async sendMessage() {
-        if (this.isGuest) {
-            this.showAuthRequiredMessage();
-            return;
-        }
-
-        if (!this.isRegistered || this.isSending) return;
-
-        const inp = document.getElementById('miniChatInput');
-        const text = inp?.value.trim();
-        if (!text) return;
-
-        const now = Date.now();
-        if (now - (window.lastUserMsgTime || 0) < 1000) return;
-        window.lastUserMsgTime = now;
-
-        this.isSending = true;
-        const btn = document.getElementById('miniChatSend');
-        if (btn) btn.disabled = true;
-
-        try {
-            const tid = 'temp_' + Date.now();
-            this.addMessageToDOM({
-                id: tid,
-                text,
-                dir: 'sent',
-                time: this.getCurrentTime(),
-                is_read: true,
-                isTemp: true
-            });
-            if (inp) inp.value = '';
-            this.scrollToBottom();
-
-            this.showTypingIndicator();
-
-            const r = await fetch("{{ route('chat.send') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': this.csrfToken
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({ message_text: text })
-            });
-            const d = await r.json();
-
-            if (d.success) {
-                document.querySelector(`[data-id="${tid}"]`)?.remove();
-                const m = {
-                    id: d.message_id,
-                    text,
-                    dir: 'sent',
-                    time: this.getCurrentTime(),
-                    is_read: true
-                };
-                this.addMessageToDOM(m);
-                this.messages.push(m);
-                if (m.id > this.lastMessageId) this.lastMessageId = m.id;
-
-                await this.getSmartResponse(text);
-            } else {
-                document.querySelector(`[data-id="${tid}"]`)?.remove();
-                throw new Error(d.error || 'Ошибка отправки');
+                c.appendChild(el);
             }
-        } catch (e) {
-            this.hideTypingIndicator();
-            this.showNotification(e.message || 'Ошибка сети', 'error');
-        } finally {
-            this.isSending = false;
-            if (btn) btn.disabled = false;
-        }
-    }
 
-    showAuthRequiredMessage() {
-        const m = {
-            id: 'auth_' + Date.now(),
-            text: 'Для отправки сообщений и сохранения истории диалога, пожалуйста, авторизуйтесь. <a href="{{ route('login') }}">Войти</a> или <a href="{{ route('register') }}">Зарегистрироваться</a>',
-            dir: 'received',
-            time: this.getCurrentTime(),
-            format: 'html',
-            is_read: false
-        };
-        this.addMessageToDOM(m);
-        this.messages.push(m);
-        this.scrollToBottom();
-    }
+            async sendMessage() {
+                if (this.isGuest) {
+                    this.showAuthRequiredMessage();
+                    return;
+                }
 
-    async getSmartResponse(txt) {
-        if (this.aiResponseLock) return;
-        this.aiResponseLock = true;
+                if (!this.isRegistered || this.isSending) return;
 
-        try {
-            const r = await fetch("{{ route('chat.ai') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': this.csrfToken
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({ message_text: txt })
-            });
-            const d = await r.json();
+                const inp = document.getElementById('miniChatInput');
+                const text = inp?.value.trim();
+                if (!text) return;
 
-            if (d.success && !d.is_duplicate) {
+                const now = Date.now();
+                if (now - (window.lastUserMsgTime || 0) < 1000) return;
+                window.lastUserMsgTime = now;
+
+                this.isSending = true;
+                const btn = document.getElementById('miniChatSend');
+                if (btn) btn.disabled = true;
+
+                try {
+                    const tid = 'temp_' + Date.now();
+                    this.addMessageToDOM({
+                        id: tid,
+                        text,
+                        dir: 'sent',
+                        time: this.getCurrentTime(),
+                        is_read: true,
+                        isTemp: true
+                    });
+                    if (inp) inp.value = '';
+                    this.scrollToBottom();
+
+                    this.showTypingIndicator();
+
+                    const r = await fetch("{{ route('chat.send') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrfToken
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            message_text: text
+                        })
+                    });
+                    const d = await r.json();
+
+                    if (d.success) {
+                        document.querySelector(`[data-id="${tid}"]`)?.remove();
+                        const m = {
+                            id: d.message_id,
+                            text,
+                            dir: 'sent',
+                            time: this.getCurrentTime(),
+                            is_read: true
+                        };
+                        this.addMessageToDOM(m);
+                        this.messages.push(m);
+                        if (m.id > this.lastMessageId) this.lastMessageId = m.id;
+
+                        await this.getSmartResponse(text);
+                    } else {
+                        document.querySelector(`[data-id="${tid}"]`)?.remove();
+                        throw new Error(d.error || 'Ошибка отправки');
+                    }
+                } catch (e) {
+                    this.hideTypingIndicator();
+                    this.showNotification(e.message || 'Ошибка сети', 'error');
+                } finally {
+                    this.isSending = false;
+                    if (btn) btn.disabled = false;
+                }
+            }
+
+            showAuthRequiredMessage() {
                 const m = {
-                    id: d.message_id || 'ai_' + Date.now(),
-                    text: d.response,
+                    id: 'auth_' + Date.now(),
+                    text: 'Для отправки сообщений и сохранения истории диалога, пожалуйста, авторизуйтесь. <a href="{{ route('login') }}">Войти</a> или <a href="{{ route('register') }}">Зарегистрироваться</a>',
                     dir: 'received',
                     time: this.getCurrentTime(),
+                    format: 'html',
                     is_read: false
                 };
                 this.addMessageToDOM(m);
                 this.messages.push(m);
                 this.scrollToBottom();
+            }
 
-                if (!this.isOpen) {
-                    this.unreadCount++;
-                    this.updateBadge();
-                    this.playNotificationSound();
+            async getSmartResponse(txt) {
+                if (this.aiResponseLock) return;
+                this.aiResponseLock = true;
+
+                try {
+                    const r = await fetch("{{ route('chat.ai') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrfToken
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            message_text: txt
+                        })
+                    });
+                    const d = await r.json();
+
+                    if (d.success && !d.is_duplicate) {
+                        const m = {
+                            id: d.message_id || 'ai_' + Date.now(),
+                            text: d.response,
+                            dir: 'received',
+                            time: this.getCurrentTime(),
+                            is_read: false
+                        };
+                        this.addMessageToDOM(m);
+                        this.messages.push(m);
+                        this.scrollToBottom();
+
+                        if (!this.isOpen) {
+                            this.unreadCount++;
+                            this.updateBadge();
+                            this.playNotificationSound();
+                        }
+                    }
+                } catch (e) {
+                    console.error('AI error:', e);
+                    const m = {
+                        id: 'ai_err_' + Date.now(),
+                        text: 'Извините, я сейчас недоступен. Пожалуйста, позвоните нам: +7 (987) 416-10-10',
+                        dir: 'received',
+                        time: this.getCurrentTime(),
+                        is_read: false
+                    };
+                    this.addMessageToDOM(m);
+                    this.messages.push(m);
+                    this.scrollToBottom();
+
+                    if (!this.isOpen) {
+                        this.unreadCount++;
+                        this.updateBadge();
+                        this.playNotificationSound();
+                    }
+                } finally {
+                    this.hideTypingIndicator();
+                    this.aiResponseLock = false;
                 }
             }
-        } catch (e) {
-            console.error('AI error:', e);
-            const m = {
-                id: 'ai_err_' + Date.now(),
-                text: 'Извините, я сейчас недоступен. Пожалуйста, позвоните нам: +7 (987) 416-10-10',
-                dir: 'received',
-                time: this.getCurrentTime(),
-                is_read: false
-            };
-            this.addMessageToDOM(m);
-            this.messages.push(m);
-            this.scrollToBottom();
 
-            if (!this.isOpen) {
-                this.unreadCount++;
-                this.updateBadge();
-                this.playNotificationSound();
+            async sendMessageDirectly(txt) {
+                if (this.isSending) return;
+                this.isSending = true;
+                try {
+                    const tid = 'temp_' + Date.now();
+                    this.addMessageToDOM({
+                        id: tid,
+                        text: txt,
+                        dir: 'sent',
+                        time: this.getCurrentTime(),
+                        is_read: true,
+                        isTemp: true
+                    });
+                    this.scrollToBottom();
+
+                    const r = await fetch("{{ route('chat.send') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrfToken
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            message_text: txt
+                        })
+                    });
+                    const d = await r.json();
+                    if (d.success) {
+                        document.querySelector(`[data-id="${tid}"]`)?.remove();
+                        const m = {
+                            id: d.message_id,
+                            text: txt,
+                            dir: 'sent',
+                            time: this.getCurrentTime(),
+                            is_read: true
+                        };
+                        this.addMessageToDOM(m);
+                        this.messages.push(m);
+                        if (m.id > this.lastMessageId) this.lastMessageId = m.id;
+                    }
+                } finally {
+                    this.isSending = false;
+                }
             }
-        } finally {
-            this.hideTypingIndicator();
-            this.aiResponseLock = false;
-        }
-    }
 
-    async sendMessageDirectly(txt) {
-        if (this.isSending) return;
-        this.isSending = true;
-        try {
-            const tid = 'temp_' + Date.now();
-            this.addMessageToDOM({
-                id: tid,
-                text: txt,
-                dir: 'sent',
-                time: this.getCurrentTime(),
-                is_read: true,
-                isTemp: true
-            });
-            this.scrollToBottom();
+            async sendAdminResponse(txt) {
+                if (this.aiResponseLock) return;
+                this.aiResponseLock = true;
+                this.showTypingIndicator();
 
-            const r = await fetch("{{ route('chat.send') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': this.csrfToken
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({ message_text: txt })
-            });
-            const d = await r.json();
-            if (d.success) {
-                document.querySelector(`[data-id="${tid}"]`)?.remove();
-                const m = {
-                    id: d.message_id,
-                    text: txt,
-                    dir: 'sent',
-                    time: this.getCurrentTime(),
-                    is_read: true
+                try {
+                    await new Promise(r => setTimeout(r, 800));
+
+                    const m = {
+                        id: 'admin_' + Date.now(),
+                        text: txt,
+                        dir: 'received',
+                        time: this.getCurrentTime(),
+                        is_read: false
+                    };
+                    this.addMessageToDOM(m);
+                    this.messages.push(m);
+                    this.scrollToBottom();
+
+                    if (!this.isOpen) {
+                        this.unreadCount++;
+                        this.updateBadge();
+                        this.playNotificationSound();
+                    }
+                } finally {
+                    this.hideTypingIndicator();
+                    this.aiResponseLock = false;
+                }
+            }
+
+            showTypingIndicator() {
+                const el = document.getElementById('miniChatTyping');
+                if (el) el.style.display = 'flex';
+                this.scrollToBottom();
+            }
+
+            hideTypingIndicator() {
+                const el = document.getElementById('miniChatTyping');
+                if (el) el.style.display = 'none';
+            }
+
+            scrollToBottom() {
+                setTimeout(() => {
+                    const c = document.getElementById('miniChatMessages');
+                    if (c) c.scrollTop = c.scrollHeight;
+                }, 50);
+            }
+
+            getCurrentTime() {
+                return new Date().toLocaleTimeString('ru-RU', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            escapeHtml(t) {
+                const d = document.createElement('div');
+                d.textContent = t;
+                return d.innerHTML;
+            }
+
+            formatPhoneForDisplay(p) {
+                const c = p.replace(/\D/g, '');
+                if (c.length === 11 && c.startsWith('7')) {
+                    return `+7 (${c.substring(1,4)}) ${c.substring(4,7)}-${c.substring(7,9)}-${c.substring(9,11)}`;
+                }
+                return p;
+            }
+
+            showNotification(msg, type = 'info') {
+                const colors = {
+                    success: {
+                        bg: '#e8f5e9',
+                        border: '#c8e6c9',
+                        text: '#2e7d32'
+                    },
+                    error: {
+                        bg: '#ffebee',
+                        border: '#ffcdd2',
+                        text: '#c62828'
+                    },
+                    info: {
+                        bg: '#e3f2fd',
+                        border: '#bbdefb',
+                        text: '#1565c0'
+                    },
+                    warning: {
+                        bg: '#fff8e1',
+                        border: '#ffecb3',
+                        text: '#f57f17'
+                    }
                 };
-                this.addMessageToDOM(m);
-                this.messages.push(m);
-                if (m.id > this.lastMessageId) this.lastMessageId = m.id;
-            }
-        } finally {
-            this.isSending = false;
-        }
-    }
 
-    async sendAdminResponse(txt) {
-        if (this.aiResponseLock) return;
-        this.aiResponseLock = true;
-        this.showTypingIndicator();
+                const c = colors[type] || colors.info;
 
-        try {
-            await new Promise(r => setTimeout(r, 800));
-
-            const m = {
-                id: 'admin_' + Date.now(),
-                text: txt,
-                dir: 'received',
-                time: this.getCurrentTime(),
-                is_read: false
-            };
-            this.addMessageToDOM(m);
-            this.messages.push(m);
-            this.scrollToBottom();
-
-            if (!this.isOpen) {
-                this.unreadCount++;
-                this.updateBadge();
-                this.playNotificationSound();
-            }
-        } finally {
-            this.hideTypingIndicator();
-            this.aiResponseLock = false;
-        }
-    }
-
-    showTypingIndicator() {
-        const el = document.getElementById('miniChatTyping');
-        if (el) el.style.display = 'flex';
-        this.scrollToBottom();
-    }
-
-    hideTypingIndicator() {
-        const el = document.getElementById('miniChatTyping');
-        if (el) el.style.display = 'none';
-    }
-
-    scrollToBottom() {
-        setTimeout(() => {
-            const c = document.getElementById('miniChatMessages');
-            if (c) c.scrollTop = c.scrollHeight;
-        }, 50);
-    }
-
-    getCurrentTime() {
-        return new Date().toLocaleTimeString('ru-RU', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
-
-    escapeHtml(t) {
-        const d = document.createElement('div');
-        d.textContent = t;
-        return d.innerHTML;
-    }
-
-    formatPhoneForDisplay(p) {
-        const c = p.replace(/\D/g, '');
-        if (c.length === 11 && c.startsWith('7')) {
-            return `+7 (${c.substring(1,4)}) ${c.substring(4,7)}-${c.substring(7,9)}-${c.substring(9,11)}`;
-        }
-        return p;
-    }
-
-    showNotification(msg, type = 'info') {
-        const colors = {
-            success: { bg: '#e8f5e9', border: '#c8e6c9', text: '#2e7d32' },
-            error:   { bg: '#ffebee', border: '#ffcdd2', text: '#c62828' },
-            info:    { bg: '#e3f2fd', border: '#bbdefb', text: '#1565c0' },
-            warning: { bg: '#fff8e1', border: '#ffecb3', text: '#f57f17' }
-        };
-
-        const c = colors[type] || colors.info;
-
-        const n = document.createElement('div');
-        n.style.cssText = `
+                const n = document.createElement('div');
+                n.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
@@ -1982,211 +2013,217 @@ class MiniChat {
             line-height: 1.4;
         `;
 
-        n.textContent = msg;
+                n.textContent = msg;
 
-        document.body.appendChild(n);
-        setTimeout(() => {
-            n.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => n.remove(), 300);
-        }, 3000);
-    }
-
-    updateBadge() {
-        const badge = document.getElementById('chatBadge');
-        if (badge) {
-            if (this.unreadCount > 0) {
-                badge.textContent = this.unreadCount > 9 ? '9+' : this.unreadCount;
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
+                document.body.appendChild(n);
+                setTimeout(() => {
+                    n.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => n.remove(), 300);
+                }, 3000);
             }
-        }
-    }
 
-    playNotificationSound() {
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.setValueAtTime(880, ctx.currentTime);
-            gain.gain.setValueAtTime(0.08, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + 0.15);
-        } catch (e) {}
-    }
-
-    toggle() {
-        this.isOpen ? this.close() : this.open();
-    }
-
-    open() {
-        const m = document.getElementById('miniChatModal');
-        if (!m) return;
-        m.classList.add('active');
-        document.body.classList.add('chat-open');
-        this.isOpen = true;
-        this.updateStatus();
-        this.showChatView();
-        
-        this.unreadCount = 0;
-        this.updateBadge();
-        this.markAsRead();
-
-        const draft = localStorage.getItem(this.draftKey);
-        if (draft) {
-            const i = document.getElementById('miniChatInput');
-            if (i) {
-                i.value = draft;
-                i.focus();
-            }
-        } else {
-            setTimeout(() => {
-                const i = document.getElementById('miniChatInput');
-                if (i) i.focus();
-            }, 300);
-        }
-    }
-
-    close() {
-        const m = document.getElementById('miniChatModal');
-        if (!m) return;
-        m.classList.remove('active');
-        document.body.classList.remove('chat-open');
-        this.isOpen = false;
-        document.getElementById('miniChatDropdown')?.classList.remove('show');
-
-        const inp = document.getElementById('miniChatInput');
-        if (inp && inp.value.trim()) {
-            localStorage.setItem(this.draftKey, inp.value);
-        } else {
-            localStorage.removeItem(this.draftKey);
-        }
-    }
-
-    handleMenuAction(a) {
-        if (this.isGuest) {
-            this.showAuthRequiredMessage();
-            return;
-        }
-        
-        if (!this.isRegistered) {
-            this.showNotification('Сначала завершите регистрацию', 'error');
-            return;
-        }
-        
-        switch (a) {
-            case 'clear-chat':
-                this.showConfirmClearView();
-                break;
-            case 'contact-salon':
-                this.showContactSalonView();
-                break;
-            case 'complaint':
-                this.showComplaintView();
-                break;
-            case 'export-chat':
-                this.exportChat();
-                break;
-        }
-    }
-
-    showConfirmClearView() {
-        this.hideAllModals();
-        document.getElementById('confirmClearModal')?.classList.add('active');
-    }
-
-    async clearChatConfirmed() {
-        try {
-            const r = await fetch("{{ route('chat.clear') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': this.csrfToken
-                },
-                credentials: 'same-origin'
-            });
-            const d = await r.json();
-            if (d.success) {
-                const c = document.getElementById('miniChatMessages');
-                if (c) {
-                    c.innerHTML = '';
-                    this.messages = [];
-                    this.lastMessageId = 0;
+            updateBadge() {
+                const badge = document.getElementById('chatBadge');
+                if (badge) {
+                    if (this.unreadCount > 0) {
+                        badge.textContent = this.unreadCount > 9 ? '9+' : this.unreadCount;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
                 }
-                localStorage.removeItem(this.readKey);
-                this.showChatView();
-                this.showNotification('Чат очищен', 'success');
             }
-        } catch (e) {
-            this.showNotification('Ошибка сети', 'error');
-        }
-    }
 
-    showComplaintView() {
-        this.hideAllModals();
-        const m = document.getElementById('complaintModal');
-        if (m) {
-            m.classList.add('active');
-            document.getElementById('complaintForm')?.reset();
-        }
-    }
-
-    async submitComplaint() {
-        const t = document.getElementById('complaintType')?.value;
-        const txt = document.getElementById('complaintText')?.value;
-
-        if (!t || !txt) {
-            this.showNotification('Заполните обязательные поля', 'error');
-            return;
-        }
-
-        try {
-            const r = await fetch("{{ route('chat.complaint') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': this.csrfToken
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({ type: t, text: txt })
-            });
-            const d = await r.json();
-            if (d.success) {
-                this.showNotification('Жалоба отправлена', 'success');
-                this.showChatView();
-            } else {
-                this.showNotification('Ошибка: ' + d.error, 'error');
+            playNotificationSound() {
+                try {
+                    const ctx = new(window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.15);
+                } catch (e) {}
             }
-        } catch (e) {
-            this.showNotification('Ошибка сети', 'error');
+
+            toggle() {
+                this.isOpen ? this.close() : this.open();
+            }
+
+            open() {
+                const m = document.getElementById('miniChatModal');
+                if (!m) return;
+                m.classList.add('active');
+                document.body.classList.add('chat-open');
+                this.isOpen = true;
+                this.updateStatus();
+                this.showChatView();
+
+                this.unreadCount = 0;
+                this.updateBadge();
+                this.markAsRead();
+
+                const draft = localStorage.getItem(this.draftKey);
+                if (draft) {
+                    const i = document.getElementById('miniChatInput');
+                    if (i) {
+                        i.value = draft;
+                        i.focus();
+                    }
+                } else {
+                    setTimeout(() => {
+                        const i = document.getElementById('miniChatInput');
+                        if (i) i.focus();
+                    }, 300);
+                }
+            }
+
+            close() {
+                const m = document.getElementById('miniChatModal');
+                if (!m) return;
+                m.classList.remove('active');
+                document.body.classList.remove('chat-open');
+                this.isOpen = false;
+                document.getElementById('miniChatDropdown')?.classList.remove('show');
+
+                const inp = document.getElementById('miniChatInput');
+                if (inp && inp.value.trim()) {
+                    localStorage.setItem(this.draftKey, inp.value);
+                } else {
+                    localStorage.removeItem(this.draftKey);
+                }
+            }
+
+            handleMenuAction(a) {
+                if (this.isGuest) {
+                    this.showAuthRequiredMessage();
+                    return;
+                }
+
+                if (!this.isRegistered) {
+                    this.showNotification('Сначала завершите регистрацию', 'error');
+                    return;
+                }
+
+                switch (a) {
+                    case 'clear-chat':
+                        this.showConfirmClearView();
+                        break;
+                    case 'contact-salon':
+                        this.showContactSalonView();
+                        break;
+                    case 'complaint':
+                        this.showComplaintView();
+                        break;
+                    case 'export-chat':
+                        this.exportChat();
+                        break;
+                }
+            }
+
+            showConfirmClearView() {
+                this.hideAllModals();
+                document.getElementById('confirmClearModal')?.classList.add('active');
+            }
+
+            async clearChatConfirmed() {
+                try {
+                    const r = await fetch("{{ route('chat.clear') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrfToken
+                        },
+                        credentials: 'same-origin'
+                    });
+                    const d = await r.json();
+                    if (d.success) {
+                        const c = document.getElementById('miniChatMessages');
+                        if (c) {
+                            c.innerHTML = '';
+                            this.messages = [];
+                            this.lastMessageId = 0;
+                        }
+                        localStorage.removeItem(this.readKey);
+                        this.showChatView();
+                        this.showNotification('Чат очищен', 'success');
+                    }
+                } catch (e) {
+                    this.showNotification('Ошибка сети', 'error');
+                }
+            }
+
+            showComplaintView() {
+                this.hideAllModals();
+                const m = document.getElementById('complaintModal');
+                if (m) {
+                    m.classList.add('active');
+                    document.getElementById('complaintForm')?.reset();
+                }
+            }
+
+            async submitComplaint() {
+                const t = document.getElementById('complaintType')?.value;
+                const txt = document.getElementById('complaintText')?.value;
+
+                if (!t || !txt) {
+                    this.showNotification('Заполните обязательные поля', 'error');
+                    return;
+                }
+
+                try {
+                    const r = await fetch("{{ route('chat.complaint') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrfToken
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            type: t,
+                            text: txt
+                        })
+                    });
+                    const d = await r.json();
+                    if (d.success) {
+                        this.showNotification('Жалоба отправлена', 'success');
+                        this.showChatView();
+                    } else {
+                        this.showNotification('Ошибка: ' + d.error, 'error');
+                    }
+                } catch (e) {
+                    this.showNotification('Ошибка сети', 'error');
+                }
+            }
+
+            showContactSalonView() {
+                this.hideAllModals();
+                document.getElementById('contactSalonModal')?.classList.add('active');
+            }
+
+            exportChat() {
+                const txt = this.messages.map(m => `[${m.time}] ${m.dir === 'sent' ? 'Вы' : 'Смарти'}: ${m.text}`).join(
+                    '\n');
+                const blob = new Blob([txt], {
+                    type: 'text/plain'
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `чат_смарти_${new Date().toISOString().split('T')[0]}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                this.showNotification('Чат экспортирован', 'success');
+            }
         }
-    }
 
-    showContactSalonView() {
-        this.hideAllModals();
-        document.getElementById('contactSalonModal')?.classList.add('active');
-    }
-
-    exportChat() {
-        const txt = this.messages.map(m => `[${m.time}] ${m.dir === 'sent' ? 'Вы' : 'Смарти'}: ${m.text}`).join('\n');
-        const blob = new Blob([txt], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `чат_смарти_${new Date().toISOString().split('T')[0]}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        this.showNotification('Чат экспортирован', 'success');
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    window.miniChat = new MiniChat();
-});
-</script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.miniChat = new MiniChat();
+        });
+    </script>
 @endpush

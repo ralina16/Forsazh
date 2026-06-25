@@ -603,12 +603,12 @@
         }
 
         #carDetailsContent p,
-#carDetailsContent .mt-3 p {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    white-space: normal;
-}
+        #carDetailsContent .mt-3 p {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+        }
 
         .section-subtitle {
             color: var(--secondary-color);
@@ -1037,7 +1037,7 @@
         @endif
     </section>
 
-    
+
     <div class="modal fade" id="addCarModal" tabindex="-1" aria-labelledby="addCarModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
@@ -1164,7 +1164,7 @@
         </div>
     </div>
 
-    
+
     <div class="modal fade" id="editCarModal" tabindex="-1" aria-labelledby="editCarModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
@@ -1292,7 +1292,7 @@
         </div>
     </div>
 
-    
+
     <div class="modal fade" id="addAuctionModal" tabindex="-1" aria-labelledby="addAuctionModalLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -1355,7 +1355,7 @@
         </div>
     </div>
 
-    
+
     <div class="modal fade" id="editAuctionModal" tabindex="-1" aria-labelledby="editAuctionModalLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -1413,28 +1413,30 @@
         </div>
     </div>
 
-    <div class="modal fade" id="deleteCarModal" tabindex="-1" aria-labelledby="deleteCarModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteCarModalLabel">Подтверждение удаления</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body">
-                <p>Удалить автомобиль <strong id="deleteCarModelName"></strong>?</p>
-                <p class="text-danger mb-0">Данное действие нельзя отменить. При наличии связанных аукционов удаление может оказаться невозможным.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteCarBtn">
-                    <i class="bi bi-trash me-1"></i> Удалить
-                </button>
+    <div class="modal fade" id="deleteCarModal" tabindex="-1" aria-labelledby="deleteCarModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteCarModalLabel">Подтверждение удаления</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Удалить автомобиль <strong id="deleteCarModelName"></strong>?</p>
+                    <p class="text-danger mb-0">Данное действие нельзя отменить. При наличии связанных аукционов удаление
+                        может оказаться невозможным.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteCarBtn">
+                        <i class="bi bi-trash me-1"></i> Удалить
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-    
+
     <div class="modal fade" id="viewRowModal" tabindex="-1" aria-labelledby="viewRowModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
@@ -1446,8 +1448,8 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
                     <button type="button" class="btn btn-danger" id="deleteCarFromViewBtn">
-    <i class="bi bi-trash me-1"></i> Удалить
-</button>
+                        <i class="bi bi-trash me-1"></i> Удалить
+                    </button>
                     <a href="#" class="btn btn-dark" id="managePhotosBtn">
                         <i class="bi bi-images me-1"></i> Загрузить доп фото
                     </a>
@@ -1584,68 +1586,70 @@
 
             let carIdToDelete = null;
 
-function openDeleteModal(carId, modelName) {
-    carIdToDelete = carId;
-    document.getElementById('deleteCarModelName').textContent = modelName || '';
-    new bootstrap.Modal(document.getElementById('deleteCarModal')).show();
-}
-
-document.querySelectorAll('.delete-car-btn').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const row = document.querySelector('tr[data-id="' + this.dataset.carId + '"]');
-        openDeleteModal(this.dataset.carId, row ? row.dataset.model : '');
-    });
-});
-
-const deleteCarFromViewBtn = document.getElementById('deleteCarFromViewBtn');
-if (deleteCarFromViewBtn) {
-    deleteCarFromViewBtn.addEventListener('click', function() {
-        const carId = document.getElementById('editCarFromViewBtn').dataset.carId;
-        const row = document.querySelector('tr[data-id="' + carId + '"]');
-        const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewRowModal'));
-        if (viewModal) viewModal.hide();
-        openDeleteModal(carId, row ? row.dataset.model : '');
-    });
-}
-
-const confirmDeleteCarBtn = document.getElementById('confirmDeleteCarBtn');
-if (confirmDeleteCarBtn) {
-    confirmDeleteCarBtn.addEventListener('click', async function() {
-        if (!carIdToDelete) return;
-        const btn = this;
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Удаление...';
-
-        const formData = new FormData();
-        formData.append('_method', 'DELETE');
-
-        try {
-            const response = await fetch('{{ route("admin.auctions.cars.destroy", "") }}/' + carIdToDelete, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                    'Accept': 'application/json'
-                },
-                body: formData
-            });
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                window.location.reload();
-            } else {
-                alert(data.error || 'Ошибка при удалении');
-                btn.disabled = false;
-                btn.innerHTML = originalHtml;
+            function openDeleteModal(carId, modelName) {
+                carIdToDelete = carId;
+                document.getElementById('deleteCarModelName').textContent = modelName || '';
+                new bootstrap.Modal(document.getElementById('deleteCarModal')).show();
             }
-        } catch {
-            alert('Ошибка соединения');
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-        }
-    });
-}
+
+            document.querySelectorAll('.delete-car-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const row = document.querySelector('tr[data-id="' + this.dataset.carId + '"]');
+                    openDeleteModal(this.dataset.carId, row ? row.dataset.model : '');
+                });
+            });
+
+            const deleteCarFromViewBtn = document.getElementById('deleteCarFromViewBtn');
+            if (deleteCarFromViewBtn) {
+                deleteCarFromViewBtn.addEventListener('click', function() {
+                    const carId = document.getElementById('editCarFromViewBtn').dataset.carId;
+                    const row = document.querySelector('tr[data-id="' + carId + '"]');
+                    const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewRowModal'));
+                    if (viewModal) viewModal.hide();
+                    openDeleteModal(carId, row ? row.dataset.model : '');
+                });
+            }
+
+            const confirmDeleteCarBtn = document.getElementById('confirmDeleteCarBtn');
+            if (confirmDeleteCarBtn) {
+                confirmDeleteCarBtn.addEventListener('click', async function() {
+                    if (!carIdToDelete) return;
+                    const btn = this;
+                    const originalHtml = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML =
+                        '<span class="spinner-border spinner-border-sm me-2"></span> Удаление...';
+
+                    const formData = new FormData();
+                    formData.append('_method', 'DELETE');
+
+                    try {
+                        const response = await fetch(
+                            '{{ route('admin.auctions.cars.destroy', '') }}/' + carIdToDelete, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': getCsrfToken(),
+                                    'Accept': 'application/json'
+                                },
+                                body: formData
+                            });
+                        const data = await response.json();
+
+                        if (response.ok && data.success) {
+                            window.location.reload();
+                        } else {
+                            alert(data.error || 'Ошибка при удалении');
+                            btn.disabled = false;
+                            btn.innerHTML = originalHtml;
+                        }
+                    } catch {
+                        alert('Ошибка соединения');
+                        btn.disabled = false;
+                        btn.innerHTML = originalHtml;
+                    }
+                });
+            }
 
             const uploadForm = document.getElementById('uploadPhotosForm');
             if (uploadForm) {
@@ -1970,5 +1974,5 @@ if (confirmDeleteCarBtn) {
 
             initDetermineWinnerForms();
         });
-</script>
+    </script>
 @endpush

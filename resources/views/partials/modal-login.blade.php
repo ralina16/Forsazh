@@ -628,16 +628,13 @@
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
-                // Очистка ошибок
                 form.querySelectorAll('.field-error').forEach(el => el.remove());
                 form.querySelectorAll('.field').forEach(f => f.classList.remove('err', 'ok'));
                 form.querySelector('.consent')?.classList.remove('error');
 
                 let isValid = true;
 
-                // Валидация всех полей
                 form.querySelectorAll('.field').forEach(fieldEl => {
-                    // Пропускаем поле кода, если оно скрыто (проверка отключена)
                     if (fieldEl.closest('#email-verification-block') && emailCodeBlock.style.display === 'none') {
                         return;
                     }
@@ -687,15 +684,10 @@
                     if (!codeSent) {
                         const result = await sendVerificationCode();
                         
-                        // Если проверка отключена администратором — сразу отправляем форму
                         if (result.disabled) {
-                            // codeSent уже true, emailCodeBlock скрыт
-                            // Просто продолжаем выполнение ниже к AJAX отправке
                         } else if (!result.sent) {
-                            // Ошибка отправки — останавливаемся
                             return;
                         } else {
-                            // Код отправлен, ждём ввода
                             return;
                         }
                     }
